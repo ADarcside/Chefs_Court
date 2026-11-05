@@ -1,0 +1,52 @@
+name: Record demo
+
+on:
+  workflow_dispatch:
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+    env:
+      MONGO_URI: mongodb://127.0.0.1:27017/chefs_court_demo
+      JWT_SECRET: demo-secret-not-for-production
+      JUDGE_INVITE_CODE: demo-judge
+      NODE_ENV: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Start API
+        run: |
+          nohup node src/server.js > server.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:4000/health && break; sleep 1; done
+      - name: Install Playwright and ffmpeg
+        run: |
+          npm i --no-save playwright
+          npx playwright install --with-deps chromium
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Record walkthrough
+        run: node scripts/demo/record.mjs
+      - name: Convert to GIF
+        run: |
+          ffmpeg -y -i scripts/demo/out/demo.webm \
+            -vf "fps=12,scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128[p];[b][p]paletteuse=dither=bayer:bayer_scale=4" \
+            docs/demo.gif
+          ffmpeg -y -i scripts/demo/out/demo.webm -c:v libx264 -pix_fmt yuv420p -movflags +faststart -preset veryfast -crf 28 docs/demo.mp4
+          ls -lh docs/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: demo
+          path: |
+            docs/demo.gif
+            docs/demo.mp4
+            scripts/demo/out/failure.png
+            server.log
