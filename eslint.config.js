@@ -17,5 +17,10 @@ export default [
       eqeqeq: ["error", "always"],
     },
   },
+  {
+    // Playwright callbacks passed to page.evaluate run in the browser.
+    files: ["scripts/demo/**"],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
   prettier,
 ];
