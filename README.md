@@ -10,6 +10,10 @@ with a final verdict.
 
 Built with Express, MongoDB (Mongoose) and JWT authentication. Interactive docs come with it.
 
+![Demo: judge signs in, searches cases, checks the jury tally and closes the case with a verdict](docs/demo.gif)
+
+<sub>30-second walkthrough in Swagger UI ([MP4](docs/demo.mp4)). Re-record it any time from the **Record demo** GitHub Action.</sub>
+
 ## Features
 
 - **Role-based access**: `PLAINTIFF`, `DEFENDANT`, `JUROR`, `JUDGE`
