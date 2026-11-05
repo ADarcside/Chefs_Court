@@ -19,8 +19,9 @@ const common = {
   404: errorResponse("Not found"),
 };
 
-const judgeAction = (summary, description) => ({
+const judgeAction = (operationId, summary, description) => ({
   tags: ["Cases"],
+  operationId,
   summary,
   description,
   security: bearer,
@@ -149,6 +150,7 @@ export const openapiSpec = {
     "/health": {
       get: {
         tags: ["Health"],
+        operationId: "health",
         summary: "Liveness check",
         responses: { 200: { description: "Service is up" } },
       },
@@ -156,6 +158,7 @@ export const openapiSpec = {
     "/auth/signup": {
       post: {
         tags: ["Auth"],
+        operationId: "signup",
         summary: "Create an account",
         description:
           "Registering as `JUDGE` requires `inviteCode` matching the server's `JUDGE_INVITE_CODE`.",
@@ -184,6 +187,7 @@ export const openapiSpec = {
     "/auth/login": {
       post: {
         tags: ["Auth"],
+        operationId: "login",
         summary: "Log in and receive a JWT",
         requestBody: {
           required: true,
@@ -206,6 +210,7 @@ export const openapiSpec = {
     "/case/submit": {
       post: {
         tags: ["Cases"],
+        operationId: "submitCase",
         summary: "File a case (plaintiff / defendant)",
         description: "Up to 5 evidence files (PDF, PNG, JPEG or plain text, max 10 MB each).",
         security: bearer,
@@ -237,6 +242,7 @@ export const openapiSpec = {
     "/case/all": {
       get: {
         tags: ["Cases"],
+        operationId: "listCases",
         summary: "List cases (paginated)",
         description: "Jurors only see APPROVED and CLOSED cases.",
         security: bearer,
@@ -266,6 +272,7 @@ export const openapiSpec = {
     "/case/by-name/{name}": {
       get: {
         tags: ["Cases"],
+        operationId: "findCasesByName",
         summary: "Find approved cases by party name (juror)",
         security: bearer,
         parameters: [{ name: "name", in: "path", required: true, schema: { type: "string" } }],
@@ -282,6 +289,7 @@ export const openapiSpec = {
     "/case/{id}": {
       get: {
         tags: ["Cases"],
+        operationId: "getCase",
         summary: "Get one case",
         security: bearer,
         parameters: [idParam("id", "Case ID")],
@@ -290,7 +298,7 @@ export const openapiSpec = {
     },
     "/case/edit/{id}": {
       patch: {
-        ...judgeAction("Edit a case (judge)"),
+        ...judgeAction("editCase", "Edit a case (judge)"),
         requestBody: {
           content: json({
             type: "object",
@@ -309,17 +317,21 @@ export const openapiSpec = {
     "/case/delete/{id}": {
       delete: {
         tags: ["Cases"],
+        operationId: "deleteCase",
         summary: "Delete a case and its votes and files (judge)",
         security: bearer,
         parameters: [idParam("id", "Case ID")],
         responses: { 200: { description: "Deleted" }, ...common },
       },
     },
-    "/case/approve/{id}": { patch: judgeAction("Approve a case for jury voting (judge)") },
-    "/case/reject/{id}": { patch: judgeAction("Reject a case (judge)") },
+    "/case/approve/{id}": {
+      patch: judgeAction("approveCase", "Approve a case for jury voting (judge)"),
+    },
+    "/case/reject/{id}": { patch: judgeAction("rejectCase", "Reject a case (judge)") },
     "/case/close/{id}": {
       patch: {
         ...judgeAction(
+          "closeCase",
           "Close voting and issue the verdict (judge)",
           "Defaults to the jury majority. Pass `verdict` to override or to break a tie.",
         ),
@@ -331,6 +343,7 @@ export const openapiSpec = {
     "/jury/vote/{caseId}": {
       post: {
         tags: ["Jury"],
+        operationId: "castVote",
         summary: "Cast a vote on an approved case (juror, once per case)",
         security: bearer,
         parameters: [idParam("caseId", "Case ID")],
@@ -352,6 +365,7 @@ export const openapiSpec = {
     "/jury/results/{caseId}": {
       get: {
         tags: ["Jury"],
+        operationId: "getResults",
         summary: "Vote tally and verdict (juror / judge)",
         security: bearer,
         parameters: [idParam("caseId", "Case ID")],
@@ -361,6 +375,7 @@ export const openapiSpec = {
     "/uploads/{filename}": {
       get: {
         tags: ["Uploads"],
+        operationId: "downloadEvidence",
         summary: "Download an evidence file (signed-in users)",
         security: bearer,
         parameters: [{ name: "filename", in: "path", required: true, schema: { type: "string" } }],
